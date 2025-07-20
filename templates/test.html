@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dog Breed Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .prediction-result .top-prediction {
+            margin-bottom: 20px;
+        }
+
+        .prediction-result .top-prediction h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .prediction-result .top-prediction p {
+            margin: 5px 0;
+        }
+
+        .prediction-result .top-prediction p:first-child {
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .prediction-result .top-prediction p:first-child:contains("Cannot recognize") {
+            color: #dc3545;
+        }
+
+        .prediction-result .all-predictions {
+            margin-top: 20px;
+        }
+
+        .prediction-result .all-predictions h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .prediction-result .all-predictions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .prediction-result .all-predictions li {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .submit-btn {
+            margin: 20px 0;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+
+        .submit-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .drop-zone {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #4CAF50;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover {
+            border-color: #45a049;
+            background-color: #f8f9fa;
+        }
+
+        .drop-zone.dragover {
+            border-color: #45a049;
+            background-color: #e9f3e9;
+        }
+
+        .drop-zone-text {
+            text-align: center;
+        }
+
+        .drop-zone-subtext {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .submit-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-button:hover {
+            background: #45a049;
+        }
+
+        .loading {
+            display: none;
+            color: #4CAF50;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #4CAF50;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .image-preview {
+            display: none;
+            margin: 20px 0;
+            max-width: 300px;
+            max-height: 200px;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.3));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .image-preview:hover .preview-overlay {
+            opacity: 1;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .prediction-result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .prediction-result h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .prediction-details {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .breed-info {
+            margin-bottom: 15px;
+        }
+
+        .breed-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .confidence {
+            color: #4CAF50;
+            font-size: 0.9em;
+        }
+
+        .accuracy-bar {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .bar-inner {
+            height: 100%;
+            background: #4CAF50;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .prediction-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .prediction-item:last-child {
+            border-bottom: none;
+        }
+
+        .prediction-item .breed-name {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .prediction-item .confidence {
+            color: #6c757d;
+        }
+
+        .prediction-item.top-prediction .breed-name {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .prediction-item.top-prediction .confidence {
+            color: #28a745;
+        }
+
+        .prediction-result .prediction-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dog Breed Classifier 🐶</h1>
+        
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">
+                <h3>Drag & Drop Image Here</h3>
+                or
+                <button class="browse-btn">Browse</button>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+        <div id="imagePreview" style="display: none;">
+            <img src="" alt="Preview" style="max-width: 300px; max-height: 200px;">
+        </div>
+
+        <button id="submitButton" class="submit-button">Predict Breed</button>
+
+        <div class="prediction-result" id="predictionResult" style="display: none;">
+            <div id="prediction"></div>
+            <ul class="prediction-list" id="otherPredictions"></ul>
+        </div>
+
+        <div id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const submitButton = document.getElementById('submitButton');
+        const loading = document.getElementById('loading');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const predictionResult = document.getElementById('predictionResult');
+        const otherPredictions = document.getElementById('otherPredictions');
+
+        // Handle file selection
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                displayImage(file);
+                submitButton.style.display = 'block';
+            }
+        });
+
+        // Handle drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                displayImage(file);
+                submitButton.style.display = 'block';
+            }
+        });
+
+        // Display image function
+        function displayImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('imagePreview');
+                const img = preview.querySelector('img');
+                img.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Handle submit
+        submitButton.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                loading.style.display = 'block';
+                submitButton.disabled = true;
+                submitButton.style.opacity = '0.6';
+
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                loading.style.display = 'none';
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+
+                if (result.error) {
+                    alert(result.error);
+                    return;
+                }
+
+                // Update prediction result
+                const predictionDiv = document.getElementById('prediction');
+                predictionDiv.innerHTML = '';
+
+                // Check if we have a valid result
+                if (result.error) {
+                    predictionDiv.innerHTML = `<p>Error: ${result.error}</p>`;
+                    return;
+                }
+
+                // Display predictions
+                const topPrediction = result.top_prediction;
+                let predictionHtml = `
+                    <div class="top-prediction">
+                        <h3>Top Prediction</h3>
+                        <p>Breed: ${topPrediction.breed}</p>
+                        <p>Confidence: ${topPrediction.confidence}</p>
+                    </div>
+                `;
+
+                // Only show all predictions if we have a recognized breed
+                if (topPrediction.breed !== "Cannot recognize") {
+                    predictionHtml += `
+                        <div class="all-predictions">
+                            <h3>All Predictions</h3>
+                            <ul>
+                                ${result.all_predictions.map(pred => 
+                                    `<li>${pred.breed}: ${pred.percentage}</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                predictionDiv.innerHTML = predictionHtml;
+
+                predictionResult.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred during prediction. Please try again.');
+                loading.style.display = 'none';
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+
+using MelonLoader;
+using System;
+
+[assembly: MelonInfo(typeof(HelloTamilMod.Main), "HelloTamilMod", "1.0.0", "OpenAI")]
+[assembly: MelonGame("semiwork", "REPO")]
+
+namespace HelloTamilMod
+{
+    public class Main : MelonMod
+    {
+        public override void OnApplicationStart()
+        {
+            MelonLogger.Msg("✅ Hello Tamil! Mod loaded successfully.");
+        }
+    }
+}
